@@ -59,6 +59,13 @@ class Migration_create_base extends CI_Migration {
 				'null' => FALSE,
 
 			),
+			'articleBaseUrlId' => array(
+				'type' => 'INT',
+				'constraint' => 1,
+				'unsigned' => TRUE,
+				'null' => FALSE,
+
+			),
 			'effectiveUrl' => array(
 				'type' => 'VARCHAR',
 				'constraint' => 1023,
@@ -75,6 +82,13 @@ class Migration_create_base extends CI_Migration {
 				'type' => 'VARCHAR',
 				'constraint' => 8191,
 				'null' => TRUE,
+
+			),
+			'imageBaseUrlId' => array(
+				'type' => 'INT',
+				'constraint' => 1,
+				'unsigned' => TRUE,
+				'null' => FALSE,
 
 			),
 			'urlToImage' => array(
@@ -101,6 +115,26 @@ class Migration_create_base extends CI_Migration {
 		$this->dbforge->add_key("id",true);
 		$this->dbforge->create_table("articles", TRUE);
 		$this->db->query('ALTER TABLE  `articles` ENGINE = InnoDB');
+
+		## Create Table base_urls
+		$this->dbforge->add_field(array(
+			'id' => array(
+				'type' => 'INT',
+				'constraint' => 1,
+				'unsigned' => TRUE,
+				'null' => FALSE,
+				'auto_increment' => TRUE
+			),
+			'url' => array(
+				'type' => 'VARCHAR',
+				'constraint' => 63,
+				'null' => FALSE,
+
+			),
+		));
+		$this->dbforge->add_key("id",true);
+		$this->dbforge->create_table("base_urls", TRUE);
+		$this->db->query('ALTER TABLE  `base_urls` ENGINE = InnoDB');
 
 		## Create Table categories
 		$this->dbforge->add_field(array(
@@ -399,6 +433,43 @@ class Migration_create_base extends CI_Migration {
 		$this->dbforge->add_key("id",true);
 		$this->dbforge->create_table("topics", TRUE);
 		$this->db->query('ALTER TABLE  `topics` ENGINE = InnoDB');
+
+		$data = array(
+			array(
+			   'gCat' => 'NATION' ,
+			   'nCat' => 'general'
+			),
+			array(
+				'gCat' => 'WORLD' ,
+				'nCat' => 'general'
+			),
+			array(
+				'gCat' => 'BUSINESS' ,
+				'nCat' => 'business'
+			),
+			array(
+				'gCat' => 'SCIENCE' ,
+				'nCat' => 'science'
+			),
+			array(
+				'gCat' => 'TECHNOLOGY' ,
+				'nCat' => 'technology'
+			),
+			array(
+				'gCat' => 'HEALTH' ,
+				'nCat' => 'health'
+			),
+			array(
+				'gCat' => 'SPORTS' ,
+				'nCat' => 'sports'
+			),
+			array(
+				'gCat' => 'ENTERTAINMENT' ,
+				'nCat' => 'entertainment'
+			)
+		 );
+		 
+		 $this->db->insert_batch('categories', $data); 
 	 }
 
 	public function down()	{
@@ -406,6 +477,8 @@ class Migration_create_base extends CI_Migration {
 		$this->dbforge->drop_table("aliases", TRUE);
 		### Drop table articles ##
 		$this->dbforge->drop_table("articles", TRUE);
+		### Drop table base_urls ##
+		$this->dbforge->drop_table("base_urls", TRUE);
 		### Drop table categories ##
 		$this->dbforge->drop_table("categories", TRUE);
 		### Drop table groups ##
