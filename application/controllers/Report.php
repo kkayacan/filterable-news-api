@@ -20,6 +20,12 @@ class Report extends RestController
         $this->response($categories, 200);
     }
 
+    public function filters_get()
+    {
+        $filters = $this->news_model->retrieve_filters();
+        $this->response($filters, 200);
+    }
+
     public function news_get()
     {
         $news = $this->news_model->retrieve_news($this->uri->uri_to_assoc(3));

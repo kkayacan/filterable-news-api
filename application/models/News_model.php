@@ -21,13 +21,24 @@ class News_model extends CI_Model
         return $this->db->get()->result();
     }
 
+    public function retrieve_filters()
+    {
+        $result = new stdClass();
+        $this->db->select('id, gCat');
+        $this->db->from('categories');
+        $result->categories = $this->db->get()->result();
+        return $result;
+    }
+
     public function retrieve_news($param)
     {
         $param = $this->_init_param($param);
 
-        $result = [];
-
+        $result = new stdClass();
+        $result->appliedFilters = new stdClass();
+        
         if ($param['id'] == 0) {
+            $result->appliedFilters->h = $param['h'];
             $this->db->select('stories.id');
             $this->db->from('stories');
             $this->db->join('story_categories', 'story_categories.storyId = stories.id');
@@ -35,6 +46,8 @@ class News_model extends CI_Model
             $this->db->where('stories.precedingPubDate <', $param['start_time']);
             if ($param['categories']) {
                 $this->db->where_in('story_categories.categoryId', $param['categories']);
+                $result->appliedFilters->c = $param['c'];
+                $result->appliedFilters->categories = $param['categories'];
             }
             $where_clause = $this->db->get_compiled_select();
         }
@@ -47,6 +60,7 @@ class News_model extends CI_Model
         $this->db->join('base_urls as u', 'u.id = i.imageBaseUrlId', 'left outer');
         if ($param['id'] > 0) {
             $this->db->where('stories.id', $param['id']);
+            $result->appliedFilters->i = $param['id'];
         } else {
             $this->db->where("`stories`.`id` IN ($where_clause)", null, false);
         }
@@ -93,8 +107,8 @@ class News_model extends CI_Model
                 $stories[$key]->succeedingStories = $this->db->get()->result();
             }
         }
-
-        return $stories;
+        $result->stories = $stories;
+        return $result;
     }
 
     public function get_next_category()
@@ -330,7 +344,7 @@ class News_model extends CI_Model
             'title' => $this->_truncate_title($link['title']),
             'sourceId' => $source['sourceId'],
             'aliasId' => $source['aliasId'],
-            'guid' => $guid
+            'guid' => $guid,
         );
         //log_message('debug', 'storyId ' . $storyId . ' gCode ' . $insert_data['gCode']);
         $this->db->insert('articles', $insert_data);
