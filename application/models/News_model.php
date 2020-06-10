@@ -111,6 +111,24 @@ class News_model extends CI_Model
         return $result;
     }
 
+    public function retrieve_meta($param)
+    {
+        if ($param['i'] > 0) {
+            $this->db->select('t.title, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image');
+            $this->db->from('stories');
+            $this->db->join('articles as t', 't.id = stories.titleArticleId');
+            $this->db->join('articles as i', 'i.id = stories.imageArticleId', 'left outer');
+            $this->db->join('base_urls as u', 'u.id = i.imageBaseUrlId', 'left outer');
+            $this->db->where('stories.id', $param['i']);
+            $result = $this->db->get()->row();
+            if($result->image == null) {
+                $this->load->helper('url');
+                $result->image = base_url() . "preview.png";
+            }
+            return $result;
+        }
+    }
+
     public function get_next_category()
     {
         $this->db->select('id, gCat, nCat');

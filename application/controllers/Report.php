@@ -32,4 +32,10 @@ class Report extends RestController
         $this->response($news, 200);
     }
 
+    public function meta_get()
+    {
+        $meta = $this->news_model->retrieve_meta($this->uri->uri_to_assoc(3));
+        $this->response($meta, 200);
+    }
+
 }
