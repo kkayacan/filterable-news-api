@@ -147,6 +147,7 @@ class News_model extends CI_Model
 
     public function insert_news($categoryId, $rss)
     {
+        set_time_limit(120);
         foreach ($rss as $key => $feed) {
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
             $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
@@ -503,37 +504,10 @@ class News_model extends CI_Model
                 $this->db->update('stories', $update_data);
             }
         }
-        /*
-    $cumulative_article_count = $this->_retrieve_cumulated_article_count($related_stories);
-    $precedingPubDate = null;
-    foreach ($related_stories as $related_story) {
-    $update_data = array(
-    'precedingPubDate' => $precedingPubDate,
-    'totalArticleCount' => $cumulative_article_count,
-    );
-    $this->db->where('id', $related_story);
-    $this->db->update('stories', $update_data);
-    $precedingPubDate = $this->_get_story_pubdate($related_story);
-    }
-     */
     }
 
     public function _retrieve_related_stories($stories)
     {
-        /*
-        $related_stories = $stories;
-        $this->db->select('storyId');
-        $this->db->where_in('storyId', $stories);
-        $query = $this->db->get('related_stories');
-        foreach ($query->result() as $row) {
-        if (!in_array($row->storyId, $related_stories)) {
-        array_push($related_stories, $row->storyId);
-        }
-        }
-        sort($related_stories);
-        return $related_stories;
-         */
-
         $related_stories = $stories;
 
         $this->db->select('mainStoryId');
@@ -556,26 +530,6 @@ class News_model extends CI_Model
 
     public function _update_story_relations($story_ids)
     {
-/*
-$i = 0;
-foreach ($stories as $storyId) {
-$this->db->delete('related_stories', array('storyId' => $storyId));
-$i++;
-if ($i == 1) {
-$mainStoryId = $storyId;
-}
-$insert_data = array(
-'mainStoryId' => $mainStoryId,
-'storyId' => $storyId,
-);
-$this->db->insert('related_stories', $insert_data);
-$update_data = array(
-'mainStoryId' => $mainStoryId,
-);
-$this->db->where('id', $storyId);
-$this->db->update('stories', $update_data);
-}
- */
         $this->db->where_in('id', $story_ids);
         $this->db->order_by('pubDate', 'ASC');
         $stories = $this->db->get('stories')->result_array();
@@ -588,7 +542,9 @@ $this->db->update('stories', $update_data);
         $i = 0;
         $precedingPubDate = null;
         foreach ($stories as $story) {
+            //log_message('debug', 'Story relations: ' . 'Deleting story ' . $story_ids[$i]);
             $this->db->delete('related_stories', array('storyId' => $story_ids[$i]));
+            //log_message('debug', 'Story relations: ' . 'Affected rows ' . $this->db->affected_rows());
             if (empty($story_categories)) {
                 $this->db->select('id, storyId');
                 $this->db->where_in('storyId', $story_ids);
@@ -630,12 +586,13 @@ $this->db->update('stories', $update_data);
                     array_push($articles_to_update, $article['id']);
                 }
             }
-            $update_data = array(
-                'storyId' => $story_ids[$i],
-            );
-            $this->db->where_in('id', $articles_to_update);
-            $this->db->update('articles', $update_data);
-
+            if (!empty($articles_to_update)) {
+                $update_data = array(
+                    'storyId' => $story_ids[$i],
+                );
+                $this->db->where_in('id', $articles_to_update);
+                $this->db->update('articles', $update_data);
+            }
             $insert_data = array(
                 'mainStoryId' => $mainStoryId,
                 'storyId' => $story_ids[$i],
