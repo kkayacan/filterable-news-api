@@ -529,6 +529,8 @@ $config['proxy_ips'] = '';
 |--------------------------------------------------------------------------
 */
 $config['check_client_ip_in_collector'] = TRUE;
+$config['earliest_accepted_time'] = 24;
+$config['article_search_timeframe'] = 36;
 
 /*
 |--------------------------------------------------------------------------

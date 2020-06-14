@@ -6,6 +6,7 @@ class News_model extends CI_Model
 {
 
     private $redundant_texts = [];
+    private $earliest_article = 0;
 
     public function __construct()
     {
@@ -148,16 +149,14 @@ class News_model extends CI_Model
     public function insert_news($categoryId, $rss)
     {
         set_time_limit(120);
+        $earliest_accepted_time = $this->_get_earliest_accepted_time();
+        //log_message('debug', 'Earliest accepted time ' . $earliest_accepted_time);
         foreach ($rss as $key => $feed) {
-            $this->benchmark->mark('findstory_start');
-            $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
-            $this->benchmark->mark('findstory_end');
-            $this->benchmark->mark('savefeed_start');
-            $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
-            $this->benchmark->mark('savefeed_end');
-            $this->benchmark->mark('reportfields_start');
-            $this->_prepare_report_fields($rss[$key]['stories']);
-            $this->benchmark->mark('reportfields_end');
+            if ($rss[$key]['pubDate'] >= $earliest_accepted_time) {
+                $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
+                $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
+                $this->_prepare_report_fields($rss[$key]['stories']);
+            }
         }
         return $rss;
     }
@@ -208,6 +207,13 @@ class News_model extends CI_Model
         return $param;
     }
 
+    public function _get_earliest_accepted_time()
+    {
+        $date_time = new DateTime();
+        $date_time->modify('-' . $this->config->item('earliest_accepted_time') . ' hours');
+        return $date_time->format('Y-m-d H:i:s') . ' GMT';
+    }
+
     public function _find_story_with_google_links($links)
     {
         foreach ($links as $key => $link) {
@@ -233,14 +239,31 @@ class News_model extends CI_Model
 
     public function _find_story_with_google_article_id($gCode)
     {
+        $earliest_article = $this->_get_earliest_article();
         $this->db->select('storyId');
         $this->db->where('gCode', $gCode);
+        $this->db->where('id >=', $earliest_article);
         $result = $this->db->get('articles');
         if ($result->num_rows() > 0) {
             return intval($result->row()->storyId);
         } else {
             return null;
         }
+    }
+
+    public function _get_earliest_article()
+    {
+        if (!$this->earliest_article) {
+            $date_time = new DateTime();
+            $date_time->modify('-' . $this->config->item('article_search_timeframe') . ' hours');
+            $search_time_start = $date_time->format('Y-m-d H:i:s');
+            $this->db->select_min('articles.id');
+            $this->db->from('articles');
+            $this->db->join('stories', 'stories.id = articles.storyId');
+            $this->db->where('stories.pubDate >=', $search_time_start);
+            $this->earliest_article = $this->db->get()->row()->id;
+        }
+        return $this->earliest_article;
     }
 
     public function _find_story_with_parsed_url($parsed_url)
@@ -581,10 +604,10 @@ class News_model extends CI_Model
                     array_push($story_categories_to_update, $story_category['id']);
                 }
             }
-            if (!empty($story_categories_to_update)) {
-                $update_data = array(
-                    'storyId' => $story_ids[$i],
-                );
+            $update_data = array(
+                'storyId' => $story_ids[$i],
+            );
+            if (!empty($articles_to_update)) {
                 $this->db->where_in('id', $story_categories_to_update);
                 $this->db->update('story_categories', $update_data);
                 $articles_to_update = [];
