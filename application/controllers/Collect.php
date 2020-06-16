@@ -19,24 +19,21 @@ class Collect extends RestController
 
     public function news_get()
     {
+        //tideways_xhprof_enable();
         $date_time = new DateTime();
         $execution_start = $date_time->format('Y-m-d H:i:s');
-        //$this->output->enable_profiler(TRUE);
+        //$fileprefix = $date_time->format('YmdHis');
         if ($this->config->item('check_client_ip_in_collector') && $_SERVER['SERVER_ADDR'] != get_client_ip_server()) {
             $this->response('Unauthorized', 401);
         }
         $category = $this->news_model->get_next_category();
         log_message('debug', $category->gCat . ' ' . $execution_start . ' start');
 
-        $key = ftok(__FILE__, '0');
-        $semaphore = sem_get($key, 1);
-        if (sem_acquire($semaphore, 1) !== false) {
-
-        } else {
+        $semaphore = sem_get(ftok(__FILE__, '0'), 1);
+        if (!sem_acquire($semaphore, 1)) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' another process running');
             die();
         }
-
         try
         {
             $this->benchmark->mark('google_start');
@@ -56,11 +53,21 @@ class Collect extends RestController
             $this->news_model->update_news($newsapi);
             $this->benchmark->mark('update_end');
             log_message('debug', $category->gCat . ' ' . $execution_start . ' news update elapsed ' . $this->benchmark->elapsed_time('update_start', 'update_end'));
-            $this->response($inserted_news, 200);
+            //$this->response($inserted_news, 200);
         } catch (\Exception $e) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' Catched: ' . $e->getMessage());
         }
         sem_release($semaphore);
+        //$profile_data = tideways_xhprof_disable();
+        /*
+        $this->load->helper('file');
+        if (!write_file('../application/logs/' . $fileprefix . '.collector.xhprof', json_encode($profile_data))) {
+            log_message('debug', $category->gCat . ' ' . $execution_start . ' Profile data could not be written');
+        } else {
+            log_message('debug', $category->gCat . ' ' . $execution_start . ' Profile data written');
+        }
+        */
+        $this->response($inserted_news, 200);
     }
 
 }

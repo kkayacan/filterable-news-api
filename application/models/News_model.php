@@ -149,15 +149,9 @@ class News_model extends CI_Model
     {
         set_time_limit(120);
         foreach ($rss as $key => $feed) {
-            $this->benchmark->mark('findstory_start');
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
-            $this->benchmark->mark('findstory_end');
-            $this->benchmark->mark('savefeed_start');
             $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
-            $this->benchmark->mark('savefeed_end');
-            $this->benchmark->mark('reportfields_start');
             $this->_prepare_report_fields($rss[$key]['stories']);
-            $this->benchmark->mark('reportfields_end');
         }
         return $rss;
     }
