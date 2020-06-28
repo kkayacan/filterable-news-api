@@ -19,13 +19,13 @@ class Collect extends RestController
 
     public function news_get()
     {
+        if ($this->config->item('check_client_ip_in_collector') && $_SERVER['SERVER_ADDR'] != get_client_ip_server()) {
+            $this->response('Unauthorized', 401);
+        }
         //tideways_xhprof_enable();
         $date_time = new DateTime();
         $execution_start = $date_time->format('Y-m-d H:i:s');
         //$fileprefix = $date_time->format('YmdHis');
-        if ($this->config->item('check_client_ip_in_collector') && $_SERVER['SERVER_ADDR'] != get_client_ip_server()) {
-            $this->response('Unauthorized', 401);
-        }
         $category = $this->news_model->get_next_category();
         log_message('debug', $category->gCat . ' ' . $execution_start . ' start');
 
@@ -49,11 +49,12 @@ class Collect extends RestController
             $newsapi = $this->newsapi_model->fetch($category->nCat);
             $this->benchmark->mark('newsapi_end');
             log_message('debug', $category->gCat . ' ' . $execution_start . ' newsapi fetch elapsed ' . $this->benchmark->elapsed_time('newsapi_start', 'newsapi_end'));
+            $top_news = $this->google_model->fetch('TOP');
+            $this->news_model->set_priorities($top_news);
             $this->benchmark->mark('update_start');
             $this->news_model->update_news($newsapi);
             $this->benchmark->mark('update_end');
             log_message('debug', $category->gCat . ' ' . $execution_start . ' news update elapsed ' . $this->benchmark->elapsed_time('update_start', 'update_end'));
-            //$this->response($inserted_news, 200);
         } catch (\Exception $e) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' Catched: ' . $e->getMessage());
         }

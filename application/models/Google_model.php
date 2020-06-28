@@ -12,6 +12,7 @@ class Google_model extends CI_Model
         parent::__construct();
         $this->config->load('news');
         $this->load->helper('simple_html_dom');
+        $this->load->helper('file');
     }
 
     public function fetch($category)
@@ -23,8 +24,17 @@ class Google_model extends CI_Model
 
     public function _fetch_remote_data($category)
     {
-        $link = $this->config->item('google_url_base') . $category . $this->config->item('google_url_param');
+        if ($category === 'TOP') {
+            $link = $this->config->item('google_topstories_url') . $this->config->item('google_url_param');
+        } else {
+            $link = $this->config->item('google_url_base') . $category . $this->config->item('google_url_param');
+        }
         $xml_string = file_get_contents($link);
+        if ($this->config->item('save_remote_responses')) {
+            $date_time = new DateTime();
+            $fileprefix = $date_time->format('YmdHis');
+            write_file('../application/logs/' . $fileprefix . '.GOOGLE.' . $category . '.xml', $xml_string);
+        }
         $xml = new SimpleXMLElement($xml_string);
         return $xml->channel->item;
     }

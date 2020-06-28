@@ -43,7 +43,7 @@ class News_model extends CI_Model
             $this->db->from('stories');
             $this->db->join('story_categories', 'story_categories.storyId = stories.id');
             $this->db->where('stories.pubDate >=', $param['start_time']);
-            $this->db->where('stories.precedingPubDate <', $param['start_time']);
+            //$this->db->where('stories.precedingPubDate <', $param['start_time']);
             if ($param['categories']) {
                 $this->db->where_in('story_categories.categoryId', $param['categories']);
                 $result->appliedFilters->c = $param['c'];
@@ -52,7 +52,7 @@ class News_model extends CI_Model
             $where_clause = $this->db->get_compiled_select();
         }
 
-        $this->db->select('stories.id, stories.mainStoryId, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image, stories.articleCount');
+        $this->db->select('stories.id, stories.highestPriority, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image, stories.articleCount');
         $this->db->from('stories');
         $this->db->join('articles as t', 't.id = stories.titleArticleId');
         $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
@@ -64,9 +64,12 @@ class News_model extends CI_Model
         } else {
             $this->db->where("`stories`.`id` IN ($where_clause)", null, false);
         }
+        $this->db->order_by('stories.highestPriority', 'DESC');
+        //$this->db->order_by('stories.lastPriority', 'DESC');
         $this->db->order_by('stories.articleCount', 'DESC');
-        $this->db->order_by('stories.totalArticleCount', 'DESC');
+        //$this->db->order_by('stories.totalArticleCount', 'DESC');
         $this->db->order_by('stories.imageArticleId', 'DESC');
+        $this->db->order_by('stories.pubDate', 'DESC');
         $this->db->order_by('stories.id', 'DESC');
         $this->db->limit($param['l'], $param['o']);
         $stories = $this->db->get()->result();
@@ -85,27 +88,25 @@ class News_model extends CI_Model
             $this->db->where('storyId', $story->id);
             $stories[$key]->articles = $this->db->get()->result();
             $stories[$key]->precedingStories = [];
-            if ($story->mainStoryId > 0) {
-                $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
-                $this->db->from('stories');
-                $this->db->join('related_stories as r', 'r.storyId = stories.id');
-                $this->db->join('articles as t', 't.id = stories.titleArticleId');
-                $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
-                $this->db->where('r.mainStoryId', $story->mainStoryId);
-                $this->db->where('r.storyId <', $story->id);
-                $stories[$key]->precedingStories = $this->db->get()->result();
-            }
+            $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
+            $this->db->from('stories');
+            $this->db->join('direct_story_relations as r', 'r.relatedStoryId = stories.id');
+            $this->db->join('articles as t', 't.id = stories.titleArticleId');
+            $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
+            $this->db->where('r.storyId', $story->id);
+            $this->db->where('stories.pubDate <', $story->pubDate);
+            $this->db->order_by('stories.pubDate', 'ASC');
+            $stories[$key]->precedingStories = $this->db->get()->result();
             $stories[$key]->succeedingStories = [];
-            if ($story->mainStoryId > 0) {
-                $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
-                $this->db->from('stories');
-                $this->db->join('related_stories as r', 'r.storyId = stories.id');
-                $this->db->join('articles as t', 't.id = stories.titleArticleId');
-                $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
-                $this->db->where('r.mainStoryId', $story->mainStoryId);
-                $this->db->where('r.storyId >', $story->id);
-                $stories[$key]->succeedingStories = $this->db->get()->result();
-            }
+            $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
+            $this->db->from('stories');
+            $this->db->join('direct_story_relations as r', 'r.relatedStoryId = stories.id');
+            $this->db->join('articles as t', 't.id = stories.titleArticleId');
+            $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
+            $this->db->where('r.storyId', $story->id);
+            $this->db->where('stories.pubDate >', $story->pubDate);
+            $this->db->order_by('stories.pubDate', 'ASC');
+            $stories[$key]->succeedingStories = $this->db->get()->result();
         }
         $result->stories = $stories;
         return $result;
@@ -152,6 +153,32 @@ class News_model extends CI_Model
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
             $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
             $this->_prepare_report_fields($rss[$key]['stories']);
+        }
+        return $rss;
+    }
+
+    public function set_priorities($rss)
+    {
+        $priority = 255;
+        foreach ($rss as $key => $feed) {
+            $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
+            foreach ($rss[$key]['links'] as $link_key => $link) {
+                if ($link['storyId'] > 0) {
+                    $this->db->select('highestPriority');
+                    $this->db->where('id', $link['storyId']);
+                    $highestPriority = $this->db->get('stories')->row()->highestPriority;
+                    if ($priority > $highestPriority) {
+                        $highestPriority = $priority;
+                    }
+                    $update_data = array(
+                        'highestPriority' => $highestPriority,
+                        'lastPriority' => $priority,
+                    );
+                    $this->db->where('id', $link['storyId']);
+                    $this->db->update('stories', $update_data);
+                }
+            }
+            $priority--;
         }
         return $rss;
     }
@@ -489,21 +516,34 @@ class News_model extends CI_Model
             }
             $this->db->where('id', $story);
             $this->db->update('stories', $update_data);
-        }
-
-        $related_stories = $this->_retrieve_related_stories($stories);
-        if (count($related_stories) > 1) {
-            $this->_update_story_relations($related_stories);
-        } else {
-            $cumulative_article_count = $this->_retrieve_cumulated_article_count($related_stories);
-            foreach ($related_stories as $related_story) {
-                $update_data = array(
-                    'totalArticleCount' => $cumulative_article_count,
-                );
-                $this->db->where('id', $related_story);
-                $this->db->update('stories', $update_data);
+            foreach ($stories as $relatedStory) {
+                if ($relatedStory !== $story) {
+                    $insert_data = array(
+                        'storyId' => $story,
+                        'relatedStoryId' => $relatedStory,
+                    );
+                    $insert_query = $this->db->insert_string('direct_story_relations', $insert_data);
+                    $insert_query = str_replace('INSERT INTO', 'INSERT IGNORE INTO', $insert_query);
+                    $this->db->query($insert_query);
+                }
             }
         }
+
+        /*
+    $related_stories = $this->_retrieve_related_stories($stories);
+    if (count($related_stories) > 1) {
+    $this->_update_story_relations($related_stories, $stories);
+    } else {
+    $cumulative_article_count = $this->_retrieve_cumulated_article_count($related_stories);
+    foreach ($related_stories as $related_story) {
+    $update_data = array(
+    'totalArticleCount' => $cumulative_article_count,
+    );
+    $this->db->where('id', $related_story);
+    $this->db->update('stories', $update_data);
+    }
+    }
+     */
     }
 
     public function _retrieve_related_stories($stories)
@@ -528,7 +568,7 @@ class News_model extends CI_Model
         return $related_stories;
     }
 
-    public function _update_story_relations($story_ids)
+    public function _update_story_relations($story_ids, $fetched_story_ids)
     {
         $this->db->where_in('id', $story_ids);
         $this->db->order_by('pubDate', 'ASC');
