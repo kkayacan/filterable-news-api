@@ -43,7 +43,7 @@ class News_model extends CI_Model
             $this->db->from('stories');
             $this->db->join('story_categories', 'story_categories.storyId = stories.id');
             $this->db->where('stories.pubDate >=', $param['start_time']);
-            //$this->db->where('stories.precedingPubDate <', $param['start_time']);
+            $this->db->where('stories.precedingPubDate <', $param['start_time']);
             if ($param['categories']) {
                 $this->db->where_in('story_categories.categoryId', $param['categories']);
                 $result->appliedFilters->c = $param['c'];
@@ -66,7 +66,7 @@ class News_model extends CI_Model
         }
         $this->db->order_by('stories.highestPriority', 'DESC');
         //$this->db->order_by('stories.lastPriority', 'DESC');
-        $this->db->order_by('stories.articleCount', 'DESC');
+        $this->db->order_by('stories.highestArticleCount', 'DESC');
         //$this->db->order_by('stories.totalArticleCount', 'DESC');
         $this->db->order_by('stories.imageArticleId', 'DESC');
         $this->db->order_by('stories.pubDate', 'DESC');
@@ -90,7 +90,7 @@ class News_model extends CI_Model
             $stories[$key]->precedingStories = [];
             $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
             $this->db->from('stories');
-            $this->db->join('direct_story_relations as r', 'r.relatedStoryId = stories.id');
+            $this->db->join('story_relations as r', 'r.relatedStoryId = stories.id');
             $this->db->join('articles as t', 't.id = stories.titleArticleId');
             $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
             $this->db->where('r.storyId', $story->id);
@@ -100,7 +100,7 @@ class News_model extends CI_Model
             $stories[$key]->succeedingStories = [];
             $this->db->select('stories.id, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt');
             $this->db->from('stories');
-            $this->db->join('direct_story_relations as r', 'r.relatedStoryId = stories.id');
+            $this->db->join('story_relations as r', 'r.relatedStoryId = stories.id');
             $this->db->join('articles as t', 't.id = stories.titleArticleId');
             $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
             $this->db->where('r.storyId', $story->id);
@@ -190,9 +190,6 @@ class News_model extends CI_Model
             if ($article) {
                 $story_details = $this->_update_article($article->id, $item->description, $item->urlToImage);
                 $this->_update_story_details($article->storyId, $story_details);
-                if (array_key_exists('imageArticleId', $story_details)) {
-                    $this->_update_related_story_images($article->storyId, $article->id);
-                }
             } else {
                 //log_message('debug', 'URL not found: ' . $item->url);
             }
@@ -522,126 +519,16 @@ class News_model extends CI_Model
                         'storyId' => $story,
                         'relatedStoryId' => $relatedStory,
                     );
-                    $insert_query = $this->db->insert_string('direct_story_relations', $insert_data);
+                    $insert_query = $this->db->insert_string('story_relations', $insert_data);
                     $insert_query = str_replace('INSERT INTO', 'INSERT IGNORE INTO', $insert_query);
                     $this->db->query($insert_query);
                 }
             }
         }
-
-        /*
-    $related_stories = $this->_retrieve_related_stories($stories);
-    if (count($related_stories) > 1) {
-    $this->_update_story_relations($related_stories, $stories);
-    } else {
-    $cumulative_article_count = $this->_retrieve_cumulated_article_count($related_stories);
-    foreach ($related_stories as $related_story) {
-    $update_data = array(
-    'totalArticleCount' => $cumulative_article_count,
-    );
-    $this->db->where('id', $related_story);
-    $this->db->update('stories', $update_data);
-    }
-    }
-     */
-    }
-
-    public function _retrieve_related_stories($stories)
-    {
-        $related_stories = $stories;
-
-        $this->db->select('mainStoryId');
-        $this->db->from('related_stories');
-        $this->db->where_in('storyId', $stories);
-        $where_clause = $this->db->get_compiled_select();
-
-        $this->db->select('storyId');
-        $this->db->where("`mainStoryId` IN ($where_clause)", null, false);
-        $query = $this->db->get('related_stories');
-
-        foreach ($query->result() as $row) {
-            if (!in_array($row->storyId, $related_stories)) {
-                array_push($related_stories, $row->storyId);
-            }
-        }
-        sort($related_stories);
-        return $related_stories;
-    }
-
-    public function _update_story_relations($story_ids, $fetched_story_ids)
-    {
-        $this->db->where_in('id', $story_ids);
-        $this->db->order_by('pubDate', 'ASC');
-        $stories = $this->db->get('stories')->result_array();
-
-        $story_categories = [];
-        $articles = [];
-
-        $mainStoryId = $story_ids[0];
-        $cumulative_article_count = $this->_retrieve_cumulated_article_count($story_ids);
-        $i = 0;
-        $precedingPubDate = null;
         foreach ($stories as $story) {
-            //log_message('debug', 'Story relations: ' . 'Deleting story ' . $story_ids[$i]);
-            $this->db->delete('related_stories', array('storyId' => $story_ids[$i]));
-            //log_message('debug', 'Story relations: ' . 'Affected rows ' . $this->db->affected_rows());
-            if (empty($story_categories)) {
-                $this->db->select('id, storyId');
-                $this->db->where_in('storyId', $story_ids);
-                $story_categories = $this->db->get('story_categories')->result_array();
-            }
-            if (empty($articles)) {
-                $this->db->select('id, storyId');
-                $this->db->where_in('storyId', $story_ids);
-                $articles = $this->db->get('articles')->result_array();
-            }
-            $update_data = array(
-                'pubDate' => $story['pubDate'],
-                'firstSeen' => $story['firstSeen'],
-                'lastSeen' => $story['lastSeen'],
-                'precedingPubDate' => $precedingPubDate,
-                'articleCount' => $story['articleCount'],
-                'totalArticleCount' => $cumulative_article_count,
-                'mainStoryId' => $mainStoryId,
-                'titleArticleId' => $story['titleArticleId'],
-                'excerptArticleId' => $story['excerptArticleId'],
-                'imageArticleId' => $story['imageArticleId'],
-            );
-            $this->db->where('id', $story_ids[$i]);
-            $this->db->update('stories', $update_data);
-            $story_categories_to_update = [];
-            foreach ($story_categories as $story_category) {
-                if ($story_category['storyId'] == $story['id']) {
-                    array_push($story_categories_to_update, $story_category['id']);
-                }
-            }
-            if (!empty($story_categories_to_update)) {
-                $update_data = array(
-                    'storyId' => $story_ids[$i],
-                );
-                $this->db->where_in('id', $story_categories_to_update);
-                $this->db->update('story_categories', $update_data);
-                $articles_to_update = [];
-                foreach ($articles as $article) {
-                    if ($article['storyId'] == $story['id']) {
-                        array_push($articles_to_update, $article['id']);
-                    }
-                }
-            }
-            if (!empty($articles_to_update)) {
-                $update_data = array(
-                    'storyId' => $story_ids[$i],
-                );
-                $this->db->where_in('id', $articles_to_update);
-                $this->db->update('articles', $update_data);
-            }
-            $insert_data = array(
-                'mainStoryId' => $mainStoryId,
-                'storyId' => $story_ids[$i],
-            );
-            $this->db->insert('related_stories', $insert_data);
-            $precedingPubDate = $story['pubDate'];
-            $i++;
+            $chain_data = $this->_retrieve_chain_data($story);
+            $this->db->where('id', $story);
+            $this->db->update('stories', $chain_data);
         }
     }
 
@@ -715,6 +602,41 @@ class News_model extends CI_Model
         return $details;
     }
 
+    public function _retrieve_chain_data($storyId)
+    {
+        $chain_data = array(
+            'precedingPubDate' => null,
+            'highestArticleCount' => 0,
+            'totalArticleCount' => 0,
+        );
+        $this->db->select('relatedStoryId');
+        $this->db->from('story_relations');
+        $this->db->where('storyId', $storyId);
+        $where_clause = $this->db->get_compiled_select();
+        $this->db->select('id, pubDate, articleCount');
+        $this->db->from('stories');
+        $this->db->where('id', $storyId);
+        $this->db->or_where("`id` IN ($where_clause)", null, false);
+        $this->db->order_by('pubDate', 'DESC');
+        $stories = $this->db->get()->result();
+        $found = false;
+        foreach($stories as $story) {
+            //log_message('debug', 'pubDate: ' . $story->pubDate);
+            if (intval($story->id) === intval($storyId)) {
+                //log_message('debug', 'Story found');
+                $found = true;
+            } elseif ($found && !$chain_data['precedingPubDate']) {
+                //log_message('debug', 'Preceding story');
+                $chain_data['precedingPubDate'] = $story->pubDate;
+            }
+            if ($story->articleCount > $chain_data['highestArticleCount']) {
+                $chain_data['highestArticleCount'] = $story->articleCount;
+            }
+            $chain_data['totalArticleCount'] += $story->articleCount;
+        }
+        return $chain_data;
+    }
+
     public function _update_article_excerpt($articles, $excerptArticleId)
     {
         foreach ($articles as $article) {
@@ -785,24 +707,6 @@ class News_model extends CI_Model
     {
         $this->db->where('id', $storyId);
         $this->db->update('stories', $story_details);
-    }
-
-    public function _update_related_story_images($storyId, $articleId)
-    {
-        $related_stories = $this->_retrieve_related_stories(array($storyId));
-
-        $this->db->select('id, imageArticleId');
-        $this->db->where_in('id', $related_stories);
-        $stories = $this->db->get('stories')->result_array();
-        foreach ($stories as $story) {
-            if (!$story['imageArticleId'] > 0) {
-                $update_data = array(
-                    'imageArticleId' => $articleId,
-                );
-                $this->db->where('id', $story['id']);
-                $this->db->update('stories', $update_data);
-            }
-        }
     }
 
 }

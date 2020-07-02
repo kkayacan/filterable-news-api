@@ -23,12 +23,4 @@ class Welcome extends CI_Controller {
 		$this->load->view('welcome_message');
 	}
 
-	function make_base(){
-		$this->load->library('ci_migrations_generator/Sqltoci');
-		// All Tables:
-		$this->sqltoci->generate();
-		//Single Table:
-		//$this->sqltoci->generate('table');
-	}
-
 }
