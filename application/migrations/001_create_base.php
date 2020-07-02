@@ -32,7 +32,7 @@ class Migration_create_base extends CI_Migration
         $this->dbforge->add_key("id", true);
         $this->dbforge->create_table("aliases", true);
         $this->db->query('ALTER TABLE  `aliases` ENGINE = InnoDB');
-        $this->db->query('CREATE INDEX name ON aliases(name)');
+        $this->db->query('CREATE UNIQUE INDEX name ON aliases(name)');
 
         ## Create Table articles
         $this->dbforge->add_field(array(
@@ -124,7 +124,7 @@ class Migration_create_base extends CI_Migration
         $this->dbforge->add_key("id", true);
         $this->dbforge->create_table("articles", true);
         $this->db->query('ALTER TABLE  `articles` ENGINE = InnoDB');
-        $this->db->query('CREATE INDEX gCode ON articles(gCode)');
+        $this->db->query('CREATE UNIQUE INDEX gCode ON articles(gCode)');
         $this->db->query('CREATE INDEX storyId ON articles(storyId)');
         $this->db->query('CREATE INDEX effectiveUrl ON articles(effectiveUrl)');
 
@@ -148,7 +148,7 @@ class Migration_create_base extends CI_Migration
         $this->dbforge->add_key("url");
         $this->dbforge->create_table("base_urls", true);
         $this->db->query('ALTER TABLE  `base_urls` ENGINE = InnoDB');
-        $this->db->query('CREATE INDEX url ON base_urls(url)');
+        $this->db->query('CREATE UNIQUE INDEX url ON base_urls(url)');
 
         ## Create Table categories
         $this->dbforge->add_field(array(
@@ -409,9 +409,9 @@ class Migration_create_base extends CI_Migration
             ),
         ));
         $this->dbforge->add_key("storyId", true);
+        $this->dbforge->add_key("relatedStoryId", true);
         $this->dbforge->create_table("story_relations", true);
         $this->db->query('ALTER TABLE  `story_relations` ENGINE = InnoDB');
-        $this->db->query('CREATE INDEX relatedStoryId ON story_relations(relatedStoryId)');
 
         ## Create Table story_topics
         $this->dbforge->add_field(array(
@@ -472,7 +472,7 @@ class Migration_create_base extends CI_Migration
         $this->dbforge->add_key("id", true);
         $this->dbforge->create_table("topics", true);
         $this->db->query('ALTER TABLE  `topics` ENGINE = InnoDB');
-        $this->db->query('CREATE INDEX name ON topics(name)');
+        $this->db->query('CREATE UNIQUE INDEX name ON topics(name)');
 
         $data = array(
             array(

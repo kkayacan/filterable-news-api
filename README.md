@@ -25,7 +25,8 @@ sudo systemctl restart apache2
 ```
 mysql -u root -p
 CREATE DATABASE dbname DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'password';FLUSH PRIVILEGES;
+GRANT ALL ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'password';
+FLUSH PRIVILEGES;
 EXIT;
 ```
 5. Clone this repo as public_html will be document root
@@ -42,9 +43,10 @@ sudo cp config.php production/config.php
 sudo cp database.php production/database.php
 sudo cp rest.php production/rest.php
 ```
-7. Set base url in config.php
+7. Set base url and newsapi.org api key in config.php
 ```
 $config['base_url'] = 'https://api.example.com/';
+$config['newsapikey'] = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 ```
 8. Set database info in database.php
 ```
@@ -74,4 +76,8 @@ sudo chown -R ownername:www-data api.example.com
 cd api.example.com  
 sudo find . -type f -exec chmod 664 {} +  
 sudo find . -type d -exec chmod 775 {} +
+```
+11. Launch your browser and execute database migration script
+```
+api.example.com/migrate
 ```
