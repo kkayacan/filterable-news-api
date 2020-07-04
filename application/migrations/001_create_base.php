@@ -124,6 +124,7 @@ class Migration_create_base extends CI_Migration
         $this->dbforge->add_key("id", true);
         $this->dbforge->create_table("articles", true);
         $this->db->query('ALTER TABLE  `articles` ENGINE = InnoDB');
+        $this->db->query('ALTER TABLE articles MODIFY gCode VARCHAR(1023) CHARACTER SET utf8 COLLATE utf8_unicode_ci');
         $this->db->query('CREATE UNIQUE INDEX gCode ON articles(gCode)');
         $this->db->query('CREATE INDEX storyId ON articles(storyId)');
         $this->db->query('CREATE INDEX effectiveUrl ON articles(effectiveUrl)');
@@ -145,7 +146,6 @@ class Migration_create_base extends CI_Migration
             ),
         ));
         $this->dbforge->add_key("id", true);
-        $this->dbforge->add_key("url");
         $this->dbforge->create_table("base_urls", true);
         $this->db->query('ALTER TABLE  `base_urls` ENGINE = InnoDB');
         $this->db->query('CREATE UNIQUE INDEX url ON base_urls(url)');

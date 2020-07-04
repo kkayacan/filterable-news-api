@@ -1,6 +1,13 @@
 # filterable-news-api
-News aggregator with PHP/CodeIgniter
+mysql/php/codeigniter powered news collector. Feel free to report bugs, suggest features and contribute.
 
+## Features
+- Developed with [CodeIgniter 3](https://codeigniter.com/)
+- Collects news from [Google News RSS](https://news.google.com/rss)
+- Collects images and excerpts from [newsapi.org](https://newsapi.org/)
+- News links parsed with [Simple HTML Dom Parser](https://simplehtmldom.sourceforge.io/)
+- News report is retrieved by GET method
+- News can be filtered by time frame, category and id
 ## Setup
 1. Enable Apache mod_rewrite  
 ```
@@ -80,4 +87,12 @@ sudo find . -type d -exec chmod 775 {} +
 11. Launch your browser and execute database migration script
 ```
 api.example.com/migrate
+```
+12. Schedule a cron job to start collecting news, ie every 3 minutes
+```
+crontab -e
+```
+Paste this
+```
+*/3 * * * * /usr/bin/curl --silent https://api.example.com/collect/news >/dev/null 2>&1
 ```
