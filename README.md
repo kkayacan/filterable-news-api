@@ -1,13 +1,20 @@
 # filterable-news-api
 mysql/php/codeigniter powered news collector. Feel free to report bugs, suggest features and contribute.
 
+Check [filterable-news-ui5](https://github.com/kkayacan/filterable-news-ui5) for frontend.
+
 ## Features
 - Developed with [CodeIgniter 3](https://codeigniter.com/)
 - Collects news from [Google News RSS](https://news.google.com/rss)
 - Collects images and excerpts from [newsapi.org](https://newsapi.org/)
 - News links parsed with [Simple HTML Dom Parser](https://simplehtmldom.sourceforge.io/)
+- Base database migration generated with [ci_migrations_generator](https://github.com/fastworkx/ci_migrations_generator)
+- Performance measured with [php-xhprof-extension](https://github.com/tideways/php-xhprof-extension)
 - News report is retrieved by GET method
 - News can be filtered by time frame, category and id
+## Requirements
+- PHP 5.6+
+- MySQL 5.1+
 ## Setup
 1. Enable Apache mod_rewrite  
 ```
