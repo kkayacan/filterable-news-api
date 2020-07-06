@@ -204,7 +204,7 @@ class News_model extends CI_Model
             $param['id'] = (int) $param['i'];
         }
         if (!array_key_exists('h', $param)) {
-            $param['h'] = '3';
+            $param['h'] = $this->config->item('default_timeframe');
         }
         if (!array_key_exists('o', $param)) {
             $param['o'] = '0';
