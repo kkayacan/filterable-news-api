@@ -15,5 +15,6 @@ application/logs/*
 !application/logs/index.html
 !application/logs/.htaccess
 /vendor/
+/application/vendor/
 
 application/libraries/ci_migrations_generator/
