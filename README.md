@@ -49,7 +49,15 @@ cd /var/www
 sudo git clone https://github.com/kkayacan/filterable-news-api.git
 sudo mv filterable-news-api api.example.com
 ```
-6. Copy configuration files to environment directory
+6. Install dependencies
+```
+cd /var/www/api.example.com/application
+sudo su
+sudo curl -s https://getcomposer.org/installer | php
+exit
+php composer.phar install
+```
+7. Copy configuration files to environment directory
 ```
 cd /var/www/api.example.com/application/config
 sudo mkdir production
@@ -57,12 +65,12 @@ sudo cp config.php production/config.php
 sudo cp database.php production/database.php
 sudo cp rest.php production/rest.php
 ```
-7. Set base url and newsapi.org api key in config.php
+8. Set base url and newsapi.org api key in config.php
 ```
 $config['base_url'] = 'https://api.example.com/';
 $config['newsapikey'] = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 ```
-8. Set database info in database.php
+9. Set database info in database.php
 ```
 $db['default'] = array(
         'dsn'   => '',
@@ -71,7 +79,7 @@ $db['default'] = array(
         'password' => 'password',
         'database' => 'dbname',
 ```
-9. [If frontend is on different origin] Enable CORS in rest.php
+10. [If frontend is on different origin] Enable CORS in rest.php
 ```
 $config['check_cors'] = TRUE;
 ```
@@ -83,7 +91,7 @@ If frontend domain known
 ```
 $config['allowed_cors_origins'] = ['https://example.com', 'https://www.example.com'];
 ```
-10. Change ownership and permissions
+11. Change ownership and permissions
 ```
 cd /var/www
 sudo chown -R ownername:www-data api.example.com  
@@ -91,11 +99,11 @@ cd api.example.com
 sudo find . -type f -exec chmod 664 {} +  
 sudo find . -type d -exec chmod 775 {} +
 ```
-11. Launch your browser and execute database migration script
+12. Launch your browser and execute database migration script
 ```
 api.example.com/migrate
 ```
-12. Schedule a cron job to start collecting news, ie every 3 minutes
+13. Schedule a cron job to start collecting news, ie every 3 minutes
 ```
 crontab -e
 ```
