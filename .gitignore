@@ -18,3 +18,5 @@ application/logs/*
 /application/vendor/
 
 application/libraries/ci_migrations_generator/
+
+composer.phar

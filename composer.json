@@ -1,0 +1,7 @@
+{
+    "require": {
+        "buchin/google-image-grabber": "*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

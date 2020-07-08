@@ -2,6 +2,8 @@
     exit('No direct script access allowed');
 }
 
+use Buchin\GoogleImageGrabber\GoogleImageGrabber;
+
 class News_model extends CI_Model
 {
 
@@ -185,13 +187,49 @@ class News_model extends CI_Model
 
     public function update_news($items)
     {
-        foreach ($items as $item) {
-            $article = $this->_find_article_with_effective_url($item->url);
-            if ($article) {
-                $story_details = $this->_update_article($article->id, $item->description, $item->urlToImage);
-                $this->_update_story_details($article->storyId, $story_details);
-            } else {
-                //log_message('debug', 'URL not found: ' . $item->url);
+        if ($items) {
+            foreach ($items as $item) {
+                $article = $this->_find_article_with_effective_url($item->url);
+                if ($article) {
+                    $story_details = $this->_update_article($article->id, $item->description, $item->urlToImage);
+                    $this->_update_story_details($article->storyId, $story_details);
+                } else {
+                    //log_message('debug', 'URL not found: ' . $item->url);
+                }
+            }
+        }
+    }
+
+    public function find_images()
+    {
+        $result = $this->retrieve_news(array('l' => '50'));
+        foreach ($result->stories as $story) {
+            if ($story->image === null) {
+                $images = GoogleImageGrabber::grab($story->title);
+                if ($images) {
+                    foreach ($images as $image) {
+                        if (substr($image['url'], 0, 5) == 'https') {
+                            foreach ($story->articles as $article) {
+                                if ($article->title === $story->title) {
+                                    $parsed_url = $this->_parse_url($image['url']);
+                                    $update_data = array(
+                                        'imageBaseUrlId' => $parsed_url['base_url_id'],
+                                        'urlToImage' => $parsed_url['remain'],
+                                    );
+                                    $story_details = array(
+                                        'imageArticleId' => $article->id,
+                                    );
+                                    $this->db->where('id', $article->id);
+                                    $this->db->update('articles', $update_data);
+                                    $this->db->where('id', $story->id);
+                                    $this->db->update('stories', $story_details);
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -620,7 +658,7 @@ class News_model extends CI_Model
         $this->db->order_by('pubDate', 'DESC');
         $stories = $this->db->get()->result();
         $found = false;
-        foreach($stories as $story) {
+        foreach ($stories as $story) {
             //log_message('debug', 'pubDate: ' . $story->pubDate);
             if (intval($story->id) === intval($storyId)) {
                 //log_message('debug', 'Story found');
@@ -689,7 +727,6 @@ class News_model extends CI_Model
                 'excerptArticleId' => $articleId,
                 'imageArticleId' => $articleId,
             );
-
         } else {
             $update_data = array(
                 'excerpt' => $excerpt,
