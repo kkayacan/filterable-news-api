@@ -55,7 +55,7 @@ cd /var/www/api.example.com/application
 sudo su
 sudo curl -s https://getcomposer.org/installer | php
 exit
-php composer.phar install
+sudo php composer.phar install
 ```
 7. Copy configuration files to environment directory
 ```

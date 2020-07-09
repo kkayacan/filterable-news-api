@@ -202,7 +202,7 @@ class News_model extends CI_Model
 
     public function find_images()
     {
-        $result = $this->retrieve_news(array('l' => '50'));
+        $result = $this->retrieve_news(array('h' => '3'));
         foreach ($result->stories as $story) {
             if ($story->image === null) {
                 $images = GoogleImageGrabber::grab($story->title);
