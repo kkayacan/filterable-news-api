@@ -208,7 +208,7 @@ class News_model extends CI_Model
                 $images = GoogleImageGrabber::grab($story->title);
                 if ($images) {
                     foreach ($images as $image) {
-                        if (substr($image['url'], 0, 5) == 'https') {
+                        if (substr($image['url'], 0, 5) == 'https' && intval($image['height']) > intval($image['width'])) {
                             foreach ($story->articles as $article) {
                                 if ($article->title === $story->title) {
                                     $parsed_url = $this->_parse_url($image['url']);

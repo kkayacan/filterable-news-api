@@ -25,7 +25,7 @@ class Welcome extends CI_Controller
     {
         $this->load->view('welcome_message');
     }
-
+/*
     public function find_image()
     {
         $keyword = $_GET['keyword'];
@@ -33,10 +33,12 @@ class Welcome extends CI_Controller
             $images = GoogleImageGrabber::grab($keyword);
             if ($images) {
                 foreach ($images as $image) {
-                    echo '<img src="' . $image['url'] . '"/>';
+                    echo '<img src="' . $image['url'] . '"/><br>';
+                    echo '<p>Width: ' . $image['width'] . '</p>';
+                    echo '<p>Height: ' . $image['height'] . '</p><br><br>';
                 }
             }
         }
     }
-
+*/
 }
