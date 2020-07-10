@@ -202,31 +202,33 @@ class News_model extends CI_Model
 
     public function find_images()
     {
-        $result = $this->retrieve_news(array('h' => '3'));
-        foreach ($result->stories as $story) {
-            if ($story->image === null) {
-                $images = GoogleImageGrabber::grab($story->title);
-                if ($images) {
-                    foreach ($images as $image) {
-                        if (substr($image['url'], 0, 5) == 'https' && intval($image['height']) > intval($image['width'])) {
-                            foreach ($story->articles as $article) {
-                                if ($article->title === $story->title) {
-                                    $parsed_url = $this->_parse_url($image['url']);
-                                    $update_data = array(
-                                        'imageBaseUrlId' => $parsed_url['base_url_id'],
-                                        'urlToImage' => $parsed_url['remain'],
-                                    );
-                                    $story_details = array(
-                                        'imageArticleId' => $article->id,
-                                    );
-                                    $this->db->where('id', $article->id);
-                                    $this->db->update('articles', $update_data);
-                                    $this->db->where('id', $story->id);
-                                    $this->db->update('stories', $story_details);
-                                    break;
+        for ($x = 24; $x > 0; $x--) {
+            $result = $this->retrieve_news(array('h' => $x));
+            foreach ($result->stories as $story) {
+                if ($story->image === null) {
+                    $images = GoogleImageGrabber::grab($story->title);
+                    if ($images) {
+                        foreach ($images as $image) {
+                            if (substr($image['url'], 0, 5) == 'https' && intval($image['height']) > intval($image['width'])) {
+                                foreach ($story->articles as $article) {
+                                    if ($article->title === $story->title) {
+                                        $parsed_url = $this->_parse_url($image['url']);
+                                        $update_data = array(
+                                            'imageBaseUrlId' => $parsed_url['base_url_id'],
+                                            'urlToImage' => $parsed_url['remain'],
+                                        );
+                                        $story_details = array(
+                                            'imageArticleId' => $article->id,
+                                        );
+                                        $this->db->where('id', $article->id);
+                                        $this->db->update('articles', $update_data);
+                                        $this->db->where('id', $story->id);
+                                        $this->db->update('stories', $story_details);
+                                        break;
+                                    }
                                 }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
