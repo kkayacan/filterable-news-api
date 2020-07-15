@@ -8,6 +8,7 @@ class News_model extends CI_Model
 {
 
     private $redundant_texts = [];
+    private $keywords = [];
 
     public function __construct()
     {
@@ -16,18 +17,12 @@ class News_model extends CI_Model
         $this->load->helper('news');
     }
 
-    public function retrieve_categories()
-    {
-        $this->db->select('id, gCat');
-        $this->db->from('categories');
-        return $this->db->get()->result();
-    }
-
     public function retrieve_filters()
     {
         $result = new stdClass();
         $this->db->select('id, gCat');
         $this->db->from('categories');
+        $this->db->order_by('sortOrder ASC');
         $result->categories = $this->db->get()->result();
         return $result;
     }
@@ -135,6 +130,7 @@ class News_model extends CI_Model
     public function get_next_category()
     {
         $this->db->select('id, gCat, nCat');
+        $this->db->where('sequence >', 0);
         $this->db->order_by('lastUpdate ASC, sequence ASC, id ASC');
         return $this->db->get('categories')->row();
     }
@@ -361,6 +357,33 @@ class News_model extends CI_Model
         return $feed;
     }
 
+    public function _get_subcategory($url)
+    {
+        if (empty($this->keywords)) {
+            $this->db->select('categoryId, keyword');
+            $this->keywords = $this->db->get('category_keywords')->result();
+        }
+        //log_message('debug', $url);
+        foreach($this->keywords as $keyword) {
+            //log_message('debug', $keyword->keyword);
+            $offset = strpos($url, $keyword->keyword);
+            //log_message('debug', strval($offset));
+            if ($offset !== FALSE && $offset >= 0) {
+                $offset = $offset + strlen($keyword->keyword);
+                //log_message('debug', strval($offset));
+                if ($offset >= strlen($url)) {
+                    //log_message('debug', '1 ' . strval($keyword->categoryId));
+                    return $keyword->categoryId;
+                }
+                if (!ctype_alpha(substr($url, $offset, 1))) {
+                    //log_message('debug', '2 ' . $keyword->categoryId);
+                    return $keyword->categoryId;
+                }
+            }
+        }
+        return false;
+    }
+
     public function _get_story_pubdate($storyId)
     {
         $this->db->select('CONCAT(stories.pubDate, " GMT") as pubDate');
@@ -430,6 +453,11 @@ class News_model extends CI_Model
             'guid' => $guid,
         );
         //log_message('debug', 'storyId ' . $storyId . ' gCode ' . $insert_data['gCode']);
+        $subcategory = $this->_get_subcategory($parsed_url['remain']);
+        if ($subcategory) {
+            $this->_update_source_category($source['sourceId'], $subcategory);
+            $this->_update_story_category($storyId, $subcategory);
+        }
         $this->db->insert('articles', $insert_data);
         return $this->db->insert_id();
     }

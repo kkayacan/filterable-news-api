@@ -14,12 +14,6 @@ class Report extends RestController
         parent::__construct();
     }
 
-    public function categories_get()
-    {
-        $categories = $this->news_model->retrieve_categories();
-        $this->response($categories, 200);
-    }
-
     public function filters_get()
     {
         $filters = $this->news_model->retrieve_filters();
