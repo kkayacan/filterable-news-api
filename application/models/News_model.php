@@ -112,9 +112,10 @@ class News_model extends CI_Model
     public function retrieve_meta($param)
     {
         if ($param['i'] > 0) {
-            $this->db->select('t.title, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image');
+            $this->db->select('t.title, e.excerpt, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image');
             $this->db->from('stories');
             $this->db->join('articles as t', 't.id = stories.titleArticleId');
+            $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
             $this->db->join('articles as i', 'i.id = stories.imageArticleId', 'left outer');
             $this->db->join('base_urls as u', 'u.id = i.imageBaseUrlId', 'left outer');
             $this->db->where('stories.id', $param['i']);

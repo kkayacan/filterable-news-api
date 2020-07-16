@@ -31,7 +31,7 @@ class Collect extends RestController
 
         $semaphore = sem_get(ftok(__FILE__, '0'), 1);
         if (!sem_acquire($semaphore, 1)) {
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' another process running');
+            log_message('error', $category->gCat . ' ' . $execution_start . ' another process running');
             die();
         }
         try
