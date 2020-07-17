@@ -49,7 +49,7 @@ class News_model extends CI_Model
             $where_clause = $this->db->get_compiled_select();
         }
 
-        $this->db->select('stories.id, stories.highestPriority, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image, stories.articleCount');
+        $this->db->select('stories.id, stories.highestPriority, CONCAT(stories.pubDate, " GMT") as pubDate, t.title, e.excerpt, IF(i.imageBaseUrlId>0, CONCAT("https://", u.url, "/", i.urlToImage), null) as image, stories.articleCount, TIMEDIFF(stories.topLastSeen, stories.topFirstSeen) as topDuration');
         $this->db->from('stories');
         $this->db->join('articles as t', 't.id = stories.titleArticleId');
         $this->db->join('articles as e', 'e.id = stories.excerptArticleId', 'left outer');
@@ -62,6 +62,7 @@ class News_model extends CI_Model
             $this->db->where("`stories`.`id` IN ($where_clause)", null, false);
         }
         $this->db->order_by('stories.highestPriority', 'DESC');
+        $this->db->order_by('topDuration', 'DESC');
         //$this->db->order_by('stories.lastPriority', 'DESC');
         $this->db->order_by('stories.highestArticleCount', 'DESC');
         //$this->db->order_by('stories.totalArticleCount', 'DESC');
