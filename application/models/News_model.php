@@ -163,15 +163,22 @@ class News_model extends CI_Model
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
             foreach ($rss[$key]['links'] as $link_key => $link) {
                 if ($link['storyId'] > 0) {
-                    $this->db->select('highestPriority');
+                    $this->db->select('highestPriority, topFirstSeen');
                     $this->db->where('id', $link['storyId']);
-                    $highestPriority = $this->db->get('stories')->row()->highestPriority;
+                    $story = $this->db->get('stories')->row();
+                    $highestPriority = $story->highestPriority;
                     if ($priority > $highestPriority) {
                         $highestPriority = $priority;
+                    }
+                    $topFirstSeen = $story->topFirstSeen;
+                    if (is_null($topFirstSeen)) {
+                        $topFirstSeen = date('Y-m-d H:i:s z');
                     }
                     $update_data = array(
                         'highestPriority' => $highestPriority,
                         'lastPriority' => $priority,
+                        'topFirstSeen' => $topFirstSeen,
+                        'topLastSeen' => date('Y-m-d H:i:s z'),
                     );
                     $this->db->where('id', $link['storyId']);
                     $this->db->update('stories', $update_data);

@@ -53,9 +53,15 @@ class Collect extends RestController
             $this->news_model->update_news($newsapi);
             $this->benchmark->mark('update_end');
             log_message('debug', $category->gCat . ' ' . $execution_start . ' news update elapsed ' . $this->benchmark->elapsed_time('update_start', 'update_end'));
+            $this->benchmark->mark('top_start');
             $top_news = $this->google_model->fetch('TOP');
             $this->news_model->set_priorities($top_news);
+            $this->benchmark->mark('top_end');
+            log_message('debug', $category->gCat . ' ' . $execution_start . ' top elapsed ' . $this->benchmark->elapsed_time('top_start', 'top_end'));
+            $this->benchmark->mark('image_start');
             $this->news_model->find_images();
+            $this->benchmark->mark('image_end');
+            log_message('debug', $category->gCat . ' ' . $execution_start . ' image elapsed ' . $this->benchmark->elapsed_time('image_start', 'image_end'));
         } catch (\Exception $e) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' Catched: ' . $e->getMessage());
         }
