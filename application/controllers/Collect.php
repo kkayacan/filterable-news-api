@@ -62,6 +62,14 @@ class Collect extends RestController
             $this->news_model->find_images();
             $this->benchmark->mark('image_end');
             log_message('debug', $category->gCat . ' ' . $execution_start . ' image elapsed ' . $this->benchmark->elapsed_time('image_start', 'image_end'));
+            $this->benchmark->mark('topic_start');
+            $topics = $this->google_model->fetch_topics();
+            foreach($topics as $topic) {
+                $topic_news = $this->google_model->fetch($topic['url']);
+                $this->news_model->set_topic($topic, $topic_news);
+            }
+            $this->benchmark->mark('topic_end');
+            log_message('debug', $category->gCat . ' ' . $execution_start . ' topic elapsed ' . $this->benchmark->elapsed_time('topic_start', 'topic_end'));
         } catch (\Exception $e) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' Catched: ' . $e->getMessage());
         }
@@ -76,6 +84,31 @@ class Collect extends RestController
         }
         */
         $this->response($inserted_news, 200);
+    }
+
+    public function topics_get()
+    {
+        /*
+        tideways_xhprof_enable();
+        $date_time = new DateTime();
+        $execution_start = $date_time->format('Y-m-d H:i:s');
+        $fileprefix = $date_time->format('YmdHis');
+        */
+        $topics = $this->google_model->fetch_topics();
+        foreach($topics as $topic) {
+            $topic_news = $this->google_model->fetch($topic['url']);
+            $this->news_model->set_topic($topic, $topic_news);
+        }
+        /*
+        $profile_data = tideways_xhprof_disable();
+        $this->load->helper('file');
+        if (!write_file('../application/logs/' . $fileprefix . '.collector.xhprof', json_encode($profile_data))) {
+            log_message('debug', 'TOPIC' . ' ' . $execution_start . ' Profile data could not be written');
+        } else {
+            log_message('debug', 'TOPIC' . ' ' . $execution_start . ' Profile data written');
+        }
+        */
+        $this->response($processed_topic, 200);
     }
 
 }

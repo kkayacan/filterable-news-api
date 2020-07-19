@@ -161,9 +161,9 @@ class News_model extends CI_Model
     {
         $priority = 255;
         foreach ($rss as $key => $feed) {
-            $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
+            $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links'], FALSE);
             foreach ($rss[$key]['links'] as $link_key => $link) {
-                if ($link['storyId'] > 0) {
+                if ($link['storyId']) {
                     $this->db->select('highestPriority, topFirstSeen');
                     $this->db->where('id', $link['storyId']);
                     $story = $this->db->get('stories')->row();
@@ -241,6 +241,21 @@ class News_model extends CI_Model
         }
     }
 
+    public function set_topic($topic, $rss)
+    {
+        $topic_id = $this->_get_topic_id($topic);
+        foreach ($rss as $key => $feed) {
+            $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links'], FALSE);
+            foreach($rss[$key]['links'] as $link) {
+                if($link['storyId']) {
+                    $this->_create_story_topic_relation($link['storyId'], $topic_id);
+                }
+            }
+        }
+        $this->_update_story_count_for_topic($topic_id);
+        return $rss;
+    }
+
     public function _init_param($param)
     {
         if (!array_key_exists('i', $param)) {
@@ -271,12 +286,12 @@ class News_model extends CI_Model
         return $param;
     }
 
-    public function _find_story_with_google_links($links)
+    public function _find_story_with_google_links($links, $parse_url = TRUE)
     {
         foreach ($links as $key => $link) {
             $google_artice_id = $this->_get_google_article_id($link['url']);
             $storyId = $this->_find_story_with_google_article_id($google_artice_id);
-            if (!$storyId) {
+            if (!$storyId && $parse_url) {
                 $links[$key]['parsed_url'] = $this->_get_parsed_url($link['url']);
                 if ($links[$key]['parsed_url']) {
                     $storyId = $this->_find_story_with_parsed_url($links[$key]['parsed_url']);
@@ -783,6 +798,49 @@ class News_model extends CI_Model
     {
         $this->db->where('id', $storyId);
         $this->db->update('stories', $story_details);
+    }
+
+    public function _get_topic_id($topic)
+    {
+        $this->db->select('id');
+        $this->db->where('gCode', $topic['gCode']);
+        $result = $this->db->get('topics');
+        if ($result->num_rows() > 0) {
+            $id = $result->row()->id;
+            $update_data = array(
+                'lastSeen' => date('Y-m-d H:i:s z'),
+            );
+            $this->db->where('id', $id);
+            $this->db->update('topics', $update_data);
+            return $id;
+        }
+        $insert_data = array(
+            'name' => $topic['name'],
+            'gCode' => $topic['gCode'],
+            'lastSeen' => date('Y-m-d H:i:s z'),
+        );
+        $this->db->insert('topics', $insert_data);
+        return $this->db->insert_id();
+    }
+
+    public function _create_story_topic_relation($storyId, $topicId)
+    {
+        $insert_data = array(
+            'storyId' => $storyId,
+            'topicId' => $topicId,
+        );
+        $insert_query = $this->db->insert_string('story_topics', $insert_data);
+        $insert_query = str_replace('INSERT INTO', 'INSERT IGNORE INTO', $insert_query);
+        $this->db->query($insert_query);
+    }
+
+    public function _update_story_count_for_topic($topic_id)
+    {
+        $this->db->where('topicId', $topic_id);
+        $count = $this->db->count_all_results('story_topics');
+        $update_data = array('storyCount' => $count);
+        $this->db->where('id', $topic_id);
+        $this->db->update('topics', $update_data);
     }
 
 }
