@@ -35,10 +35,8 @@ class Google_model extends CI_Model
         $topics_node = $html->find("div.ndSf3d.ttg1Pb.j7vNaf.Pz9Pcd.a8arzf", 0)->children();
         foreach ($topics_node as $topic) {
             $anchor = $topic->find('a', 0);
-            //echo $anchor->getAttribute ('aria-label') . ' ' . $anchor->getAttribute ('href') . '<br>';
             array_push($topics, array('name' => $anchor->getAttribute('aria-label'),
-                'url' => substr($anchor->getAttribute('href'), 1),
-                'gCode' => str_replace($this->config->item('google_url_param'), '', substr($anchor->getAttribute('href'), 9))));
+                'url' => substr($anchor->getAttribute('href'), 1)));
         }
         return array_reverse($topics);
     }

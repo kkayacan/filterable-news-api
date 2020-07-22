@@ -38,13 +38,23 @@ class News_model extends CI_Model
             $result->appliedFilters->h = $param['h'];
             $this->db->select('stories.id');
             $this->db->from('stories');
-            $this->db->join('story_categories', 'story_categories.storyId = stories.id');
+            if ($param['categories']) {
+                $this->db->join('story_categories', 'story_categories.storyId = stories.id');
+            }
+            if ($param['topics']) {
+                $this->db->join('story_topics', 'story_topics.storyId = stories.id');
+            }
             $this->db->where('stories.pubDate >=', $param['start_time']);
             $this->db->where('stories.precedingPubDate <', $param['start_time']);
             if ($param['categories']) {
                 $this->db->where_in('story_categories.categoryId', $param['categories']);
                 $result->appliedFilters->c = $param['c'];
                 $result->appliedFilters->categories = $param['categories'];
+            }
+            if ($param['topics']) {
+                $this->db->where_in('story_topics.topicId', $param['topics']);
+                $result->appliedFilters->t = $param['t'];
+                $result->appliedFilters->topics = $param['topics'];
             }
             $where_clause = $this->db->get_compiled_select();
         }
@@ -256,6 +266,16 @@ class News_model extends CI_Model
         return $rss;
     }
 
+    public function retrieve_topics($param)
+    {
+        if (array_key_exists('s', $param)) {
+            $this->db->select('id, name');
+            $this->db->like('name', $param['s']);
+            $this->db->order_by('name');
+            return $this->db->get('topics')->result();
+        }
+    }
+
     public function _init_param($param)
     {
         if (!array_key_exists('i', $param)) {
@@ -276,6 +296,11 @@ class News_model extends CI_Model
             $param['categories'] = [];
         } else {
             $param["categories"] = explode("-", $param["c"]);
+        }
+        if (!array_key_exists('t', $param)) {
+            $param['topics'] = [];
+        } else {
+            $param["topics"] = explode("-", $param["t"]);
         }
         $date_time = new DateTime();
         //log_message('debug', 'current time: ' . $date_time->format('Y-m-d H:i:s z'));
@@ -803,7 +828,7 @@ class News_model extends CI_Model
     public function _get_topic_id($topic)
     {
         $this->db->select('id');
-        $this->db->where('gCode', $topic['gCode']);
+        $this->db->where('name', $topic['name']);
         $result = $this->db->get('topics');
         if ($result->num_rows() > 0) {
             $id = $result->row()->id;
@@ -816,7 +841,6 @@ class News_model extends CI_Model
         }
         $insert_data = array(
             'name' => $topic['name'],
-            'gCode' => $topic['gCode'],
             'lastSeen' => date('Y-m-d H:i:s z'),
         );
         $this->db->insert('topics', $insert_data);
