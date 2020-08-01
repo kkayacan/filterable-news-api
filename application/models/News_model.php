@@ -24,6 +24,12 @@ class News_model extends CI_Model
         $this->db->from('categories');
         $this->db->order_by('sortOrder ASC');
         $result->categories = $this->db->get()->result();
+        $this->db->select('id, name');
+        $this->db->where('storyCount >', 0);
+        $this->db->order_by('name');
+        $topicsQuery = $this->db->get('topics');
+        $result->topics = $topicsQuery->result();
+        $result->topicCount = $topicsQuery->num_rows();
         return $result;
     }
 
@@ -271,6 +277,12 @@ class News_model extends CI_Model
         if (array_key_exists('s', $param)) {
             $this->db->select('id, name');
             $this->db->like('name', $param['s']);
+            $this->db->where('storyCount >', 0);
+            $this->db->order_by('name');
+            return $this->db->get('topics')->result();
+        } else {
+            $this->db->select('id, name');
+            $this->db->where('storyCount >', 0);
             $this->db->order_by('name');
             return $this->db->get('topics')->result();
         }
@@ -278,6 +290,12 @@ class News_model extends CI_Model
 
     public function _init_param($param)
     {
+        //(i)d
+        //(h)ours
+        //(c)ategories
+        //(t)opics
+        //(o)ffset
+        //(l)imit
         if (!array_key_exists('i', $param)) {
             $param['id'] = 0;
         } else {
