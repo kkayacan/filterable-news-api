@@ -165,10 +165,17 @@ class News_model extends CI_Model
     public function insert_news($categoryId, $rss)
     {
         set_time_limit(120);
+        log_message('debug', 'Story count: ' . count($rss));
+        $i = 0;
         foreach ($rss as $key => $feed) {
+            $i++;
+            log_message('debug', 'Story no: ' . $i);
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
+            log_message('debug', 'Method complete: find_story_with_google_links');
             $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
+            log_message('debug', 'Method complete: save_feed');
             $this->_prepare_report_fields($rss[$key]['stories']);
+            log_message('debug', 'Method complete: prepare report fields');
         }
         return $rss;
     }
@@ -223,7 +230,7 @@ class News_model extends CI_Model
 
     public function find_images()
     {
-        for ($x = 24; $x > 0; $x--) {
+        for ($x = 1; $x > 0; $x--) {
             $result = $this->retrieve_news(array('h' => $x));
             foreach ($result->stories as $story) {
                 if ($story->image === null) {

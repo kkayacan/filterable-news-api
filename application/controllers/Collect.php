@@ -39,29 +39,29 @@ class Collect extends RestController
             $this->benchmark->mark('google_start');
             $google_news = $this->google_model->fetch($category->gCat);
             $this->benchmark->mark('google_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' Google fetch elapsed ' . $this->benchmark->elapsed_time('google_start', 'google_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' Google fetch elapsed ' . $this->benchmark->elapsed_time('google_start', 'google_end'));
             $this->benchmark->mark('insert_start');
             $inserted_news = $this->news_model->insert_news($category->id, $google_news);
             $this->benchmark->mark('insert_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' news insert elapsed ' . $this->benchmark->elapsed_time('insert_start', 'insert_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' news insert elapsed ' . $this->benchmark->elapsed_time('insert_start', 'insert_end'));
             $this->news_model->set_category_updated($category->id);
             $this->benchmark->mark('newsapi_start');
             $newsapi = $this->newsapi_model->fetch($category->nCat);
             $this->benchmark->mark('newsapi_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' newsapi fetch elapsed ' . $this->benchmark->elapsed_time('newsapi_start', 'newsapi_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' newsapi fetch elapsed ' . $this->benchmark->elapsed_time('newsapi_start', 'newsapi_end'));
             $this->benchmark->mark('update_start');
             $this->news_model->update_news($newsapi);
             $this->benchmark->mark('update_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' news update elapsed ' . $this->benchmark->elapsed_time('update_start', 'update_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' news update elapsed ' . $this->benchmark->elapsed_time('update_start', 'update_end'));
             $this->benchmark->mark('top_start');
             $top_news = $this->google_model->fetch('TOP');
             $this->news_model->set_priorities($top_news);
             $this->benchmark->mark('top_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' top elapsed ' . $this->benchmark->elapsed_time('top_start', 'top_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' top elapsed ' . $this->benchmark->elapsed_time('top_start', 'top_end'));
             $this->benchmark->mark('image_start');
             $this->news_model->find_images();
             $this->benchmark->mark('image_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' image elapsed ' . $this->benchmark->elapsed_time('image_start', 'image_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' image elapsed ' . $this->benchmark->elapsed_time('image_start', 'image_end'));
             $this->benchmark->mark('topic_start');
             $topics = $this->google_model->fetch_topics();
             foreach($topics as $topic) {
@@ -69,7 +69,7 @@ class Collect extends RestController
                 $this->news_model->set_topic($topic, $topic_news);
             }
             $this->benchmark->mark('topic_end');
-            log_message('debug', $category->gCat . ' ' . $execution_start . ' topic elapsed ' . $this->benchmark->elapsed_time('topic_start', 'topic_end'));
+            //log_message('debug', $category->gCat . ' ' . $execution_start . ' topic elapsed ' . $this->benchmark->elapsed_time('topic_start', 'topic_end'));
         } catch (\Exception $e) {
             log_message('debug', $category->gCat . ' ' . $execution_start . ' Catched: ' . $e->getMessage());
         }
