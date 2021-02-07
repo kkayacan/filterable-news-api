@@ -171,11 +171,8 @@ class News_model extends CI_Model
             $i++;
             log_message('debug', 'Story no: ' . $i);
             $rss[$key]['links'] = $this->_find_story_with_google_links($feed['links']);
-            log_message('debug', 'Method complete: find_story_with_google_links');
             $rss[$key] = $this->_save_feed($rss[$key], $categoryId);
-            log_message('debug', 'Method complete: save_feed');
             $this->_prepare_report_fields($rss[$key]['stories']);
-            log_message('debug', 'Method complete: prepare report fields');
         }
         return $rss;
     }
@@ -339,12 +336,19 @@ class News_model extends CI_Model
     public function _find_story_with_google_links($links, $parse_url = TRUE)
     {
         foreach ($links as $key => $link) {
+            log_message('debug', 'Method start: _get_google_article_id');
             $google_artice_id = $this->_get_google_article_id($link['url']);
+            log_message('debug', 'Method start: _find_story_with_google_article_id');
             $storyId = $this->_find_story_with_google_article_id($google_artice_id);
+            log_message('debug', 'Method end: _find_story_with_google_article_id');
             if (!$storyId && $parse_url) {
+                log_message('debug', 'Method start: _get_parsed_url');
                 $links[$key]['parsed_url'] = $this->_get_parsed_url($link['url']);
+                log_message('debug', 'Method end: _get_parsed_url');
                 if ($links[$key]['parsed_url']) {
+                    log_message('debug', 'Method start: _find_story_with_parsed_url');
                     $storyId = $this->_find_story_with_parsed_url($links[$key]['parsed_url']);
+                    log_message('debug', 'Method end: _find_story_with_parsed_url');
                 }
             }
             $links[$key]['storyId'] = $storyId;
