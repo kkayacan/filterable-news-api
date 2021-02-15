@@ -23,6 +23,7 @@ class Report extends RestController
     public function news_get()
     {
         $news = $this->news_model->retrieve_news($this->uri->uri_to_assoc(3));
+        $news->requestUri = $this->uri->uri_string();
         $this->response($news, 200);
     }
 
